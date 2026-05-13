@@ -1,0 +1,368 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>提示词生成器 完整复刻</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-feather@2.0.10/dist/feather.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    /* 自定义滚动条，使其更美观 */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-[#f8f9fa] overflow-hidden">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, Fragment } = React;
+
+    // 6 个模块的主题色彩映射
+    const themeMap = {
+      pink: { bg: 'bg-rose-50/60', border: 'border-rose-100', activeTag: 'bg-rose-100 text-rose-700 border-rose-200', badge: 'bg-rose-500', text: 'text-rose-600' },
+      emerald: { bg: 'bg-emerald-50/60', border: 'border-emerald-100', activeTag: 'bg-emerald-100 text-emerald-700 border-emerald-200', badge: 'bg-emerald-500', text: 'text-emerald-600' },
+      purple: { bg: 'bg-purple-50/60', border: 'border-purple-100', activeTag: 'bg-purple-100 text-purple-700 border-purple-200', badge: 'bg-purple-500', text: 'text-purple-600' },
+      orange: { bg: 'bg-amber-50/60', border: 'border-amber-100', activeTag: 'bg-amber-100 text-amber-700 border-amber-200', badge: 'bg-amber-500', text: 'text-amber-600' },
+      blue: { bg: 'bg-blue-50/60', border: 'border-blue-100', activeTag: 'bg-blue-100 text-blue-700 border-blue-200', badge: 'bg-blue-500', text: 'text-blue-600' },
+      yellow: { bg: 'bg-yellow-50/60', border: 'border-yellow-100', activeTag: 'bg-yellow-100 text-yellow-700 border-yellow-200', badge: 'bg-yellow-500', text: 'text-yellow-600' },
+    };
+
+    // 完整复刻原图的所有数据结构
+    const initialData = [
+      {
+        id: 'm1', number: '1', title: '空间与主体描述', theme: 'pink',
+        categories: [
+          { id: 'c1-1', name: '建筑类型', tags: [
+            { id: 't1-1-1', text: '现代多层公共文化建筑', selected: true },
+            { id: 't1-1-2', text: '退台错层体量', selected: true },
+            { id: 't1-1-3', text: '水平错动露台结构', selected: true }
+          ]},
+          { id: 'c1-2', name: '立面材质', tags: [
+            { id: 't1-2-1', text: '主体白色清水混凝土', selected: true },
+            { id: 't1-2-2', text: '大面积白色穿孔金属镂空格栅', selected: true },
+            { id: 't1-2-3', text: '暖樱红色结构构件点缀', selected: true },
+            { id: 't1-2-4', text: '全玻璃落地幕墙', selected: true },
+            { id: 't1-2-5', text: '右侧外立面嵌入户外LED大屏', selected: true },
+            { id: 't1-2-6', text: '屋顶绿化', selected: true },
+            { id: 't1-2-7', text: '透过玻璃幕墙呈现出内部的充满活力的室内商业氛围', selected: true }
+          ]},
+          { id: 'c1-3', name: '周边环境', tags: [
+            { id: 't1-3-1', text: '城市市政道路场景', selected: true },
+            { id: 't1-3-2', text: '双向车道沥青马路', selected: true },
+            { id: 't1-3-3', text: '白色交通标线', selected: true },
+            { id: 't1-3-4', text: '道路两侧规整绿化、修剪灌木、高大阔叶乔木', selected: true },
+            { id: 't1-3-5', text: '路灯', selected: true },
+            { id: 't1-3-6', text: '城市远景简约建筑群', selected: true },
+            { id: 't1-3-7', text: '建筑周边有棕榈树', selected: true },
+            { id: 't1-3-8', text: '亚热带环境氛围', selected: true }
+          ]},
+          { id: 'c1-4', name: '场景元素', tags: [
+            { id: 't1-4-1', text: '动态写实行人（散步、行走、游玩）', selected: true },
+            { id: 't1-4-2', text: '行驶中的家用轿车', selected: true },
+            { id: 't1-4-3', text: '沿街休憩人群', selected: true },
+            { id: 't1-4-4', text: '户外遮阳伞', selected: true }
+          ]}
+        ]
+      },
+      {
+        id: 'm2', number: '2', title: '核心几何约束', theme: 'emerald',
+        categories: [
+          { id: 'c2-1', name: '模型保真', tags: [
+            { id: 't2-1-1', text: '严格保持原始SU模型建筑体量、进出结构、镂空格栅位置、门窗布局、室外楼梯形态，禁止改动空间结构与比例', selected: false },
+            { id: 't2-1-2', text: '严格保持手绘线稿所要表达的形体关系极其框架结构、楼梯等关系，保持不变', selected: true }
+          ]},
+          { id: 'c2-2', name: '画面比例', tags: [
+            { id: 't2-2-1', text: '16:9宽幅横向构图', selected: true },
+            { id: 't2-2-2', text: '低角度仰视平视视角，和参考图视角完全一致，无透视畸变', selected: true }
+          ]},
+          { id: 'c2-3', name: '细节完整', tags: [
+            { id: 't2-3-1', text: '保留格栅纹理、玻璃分割、砖面肌理、建筑构件细节完整性', selected: true }
+          ]}
+        ]
+      },
+      {
+        id: 'm3', number: '3', title: '场景光影与氛围', theme: 'purple',
+        categories: [
+          { id: 'c3-1', name: '时间天气', tags: [
+            { id: 't3-1-1', text: '晴朗白天，上午10点柔和日光', selected: true },
+            { id: 't3-1-2', text: '蓝天白云，通透干净的城市自然光', selected: true }
+          ]},
+          { id: 'c3-2', name: '光影效果', tags: [
+            { id: 't3-2-1', text: '清晰硬朗的建筑阴影', selected: true },
+            { id: 't3-2-2', text: '阳光透过树叶形成斑驳树影', selected: true },
+            { id: 't3-2-3', text: '高光柔和不曝', selected: true },
+            { id: 't3-2-4', text: '暗部细节充足，整体明亮清爽', selected: true }
+          ]},
+          { id: 'c3-3', name: '人物动态', tags: [
+            { id: 't3-3-1', text: '写实生活化行人', selected: true },
+            { id: 't3-3-2', text: '动作自然，不僵硬', selected: true },
+            { id: 't3-3-3', text: '轻微动态感，不抢建筑主体', selected: true },
+            { id: 't3-3-4', text: '亚洲女生', selected: true },
+            { id: 't3-3-5', text: '亚洲小朋友在玩耍', selected: true }
+          ]},
+          { id: 'c3-4', name: '整体氛围', tags: [
+            { id: 't3-4-1', text: '现代开放、活力舒适的城市公共空间氛围', selected: true },
+            { id: 't3-4-2', text: '干净通透', selected: true },
+            { id: 't3-4-3', text: '高级写实建筑表现', selected: true },
+            { id: 't3-4-4', text: '建筑底层为有活力的商业氛围', selected: true }
+          ]}
+        ]
+      },
+      {
+        id: 'm4', number: '4', title: '材质与渲染质感', theme: 'orange',
+        categories: [
+          { id: 'c4-1', name: '物理材质', tags: [
+            { id: 't4-1-1', text: 'PBR写实物理渲染', selected: true },
+            { id: 't4-1-2', text: '哑光白色混凝土质感', selected: true },
+            { id: 't4-1-3', text: '穿孔金属格栅细腻纹理', selected: true },
+            { id: 't4-1-4', text: '玻璃带轻微天空环境反射', selected: true },
+            { id: 't4-1-5', text: '沥青路面真实肌理', selected: true },
+            { id: 't4-1-6', text: '绿植自然质感', selected: true }
+          ]},
+          { id: 'c4-2', name: '色调风格', tags: [
+            { id: 't4-2-1', text: '低饱和自然色调', selected: true },
+            { id: 't4-2-2', text: '暖樱红色为唯一亮点色', selected: true },
+            { id: 't4-2-3', text: '整体干净通透，无杂乱色彩', selected: true }
+          ]}
+        ]
+      },
+      {
+        id: 'm5', number: '5', title: '摄影与技术参数', theme: 'blue',
+        categories: [
+          { id: 'c5-1', name: '相机配置', tags: [
+            { id: 't5-1-1', text: '尼康Z9', selected: true },
+            { id: 't5-1-2', text: '28mm广角镜头', selected: true },
+            { id: 't5-1-3', text: '无鱼眼畸变', selected: true },
+            { id: 't5-1-4', text: '景深适中', selected: true },
+            { id: 't5-1-5', text: '建筑主体清晰锐利', selected: true },
+            { id: 't5-1-6', text: '环境自然虚化', selected: true }
+          ]},
+          { id: 'c5-2', name: '渲染方式', tags: [
+            { id: 't5-2-1', text: '光线追踪渲染', selected: true },
+            { id: 't5-2-2', text: 'Enscape/Lumion写实效果超级画质', selected: true },
+            { id: 't5-2-3', text: '8K超高清分辨率', selected: true },
+            { id: 't5-2-4', text: 'HDR高动态范围', selected: true }
+          ]},
+          { id: 'c5-3', name: '画质标准', tags: [
+            { id: 't5-3-1', text: '照片级真实感', selected: true },
+            { id: 't5-3-2', text: '建筑效果图专业精度', selected: true },
+            { id: 't5-3-3', text: '锐度适中', selected: true },
+            { id: 't5-3-4', text: '无噪点、无塑料建模感', selected: true }
+          ]}
+        ]
+      },
+      {
+        id: 'm6', number: '6', title: '负面提示词', theme: 'yellow',
+        categories: [
+          { id: 'c6-1', name: '禁止元素', tags: [
+            { id: 't6-1-1', text: '卡通', selected: true },
+            { id: 't6-1-2', text: '手绘', selected: true },
+            { id: 't6-1-3', text: '二次元', selected: true },
+            { id: 't6-1-4', text: '鬼影迭影', selected: true },
+            { id: 't6-1-5', text: '模糊畸变', selected: true },
+            { id: 't6-1-6', text: '色彩过饱和', selected: true },
+            { id: 't6-1-7', text: '过度曝光', selected: true },
+            { id: 't6-1-8', text: '死黑暗部', selected: true },
+            { id: 't6-1-9', text: '塑料质感', selected: true },
+            { id: 't6-1-10', text: '人物穿模变形', selected: true },
+            { id: 't6-1-11', text: '多余杂物', selected: true },
+            { id: 't6-1-12', text: '建筑结构改动', selected: true },
+            { id: 't6-1-13', text: '玻璃面高反射反光', selected: true }
+          ]}
+        ]
+      }
+    ];
+
+    function App() {
+      const [modules, setModules] = useState(initialData);
+
+      // 点击标签切换状态
+      const toggleTag = (moduleId, categoryId, tagId) => {
+        setModules(prev => prev.map(mod => {
+          if (mod.id !== moduleId) return mod;
+          return {
+            ...mod,
+            categories: mod.categories.map(cat => {
+              if (cat.id !== categoryId) return cat;
+              return {
+                ...cat,
+                tags: cat.tags.map(tag => tag.id === tagId ? { ...tag, selected: !tag.selected } : tag)
+              };
+            })
+          };
+        }));
+      };
+
+      // 重置 / 取消选择
+      const handleReset = () => {
+        setModules(prev => prev.map(mod => ({
+          ...mod,
+          categories: mod.categories.map(cat => ({
+            ...cat,
+            tags: cat.tags.map(tag => ({ ...tag, selected: false }))
+          }))
+        })));
+      };
+
+      // 快速导航滚动逻辑 (模拟)
+      const scrollToModule = (id) => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+
+      return (
+        <div className="h-screen bg-[#f8f9fa] flex flex-col font-sans text-sm text-gray-800">
+          
+          {/* 顶部导航与操作栏 */}
+          <header className="bg-white border-b border-gray-200 px-6 py-2.5 flex items-center justify-between z-10 shrink-0">
+            <div className="flex items-center gap-4 overflow-x-auto no-scrollbar">
+              <div className="flex items-center gap-2 border-r border-gray-200 pr-4">
+                <div className="w-5 h-5 bg-indigo-600 rounded flex items-center justify-center text-white text-xs font-bold">P</div>
+                <span className="font-bold text-gray-800">提示词生成器</span>
+                <span className="text-gray-400 text-xs ml-2 border border-gray-200 px-2 py-0.5 rounded">建筑效果图</span>
+              </div>
+              
+              {/* 模块快捷锚点 */}
+              <div className="flex gap-2">
+                {modules.map(m => (
+                  <button key={`nav-${m.id}`} onClick={() => scrollToModule(m.id)} className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors hover:bg-gray-50 border border-transparent hover:border-gray-200 ${themeMap[m.theme].text}`}>
+                    <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] text-white ${themeMap[m.theme].badge}`}>{m.number}</span>
+                    <span className="whitespace-nowrap">{m.title}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 右侧操作按钮 */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800 transition flex items-center gap-1">↓ 导入</button>
+              <button className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800 transition flex items-center gap-1">↑ 导出</button>
+              <div className="w-px h-4 bg-gray-300 mx-1"></div>
+              <button onClick={handleReset} className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded transition flex items-center gap-1">↺ 重置</button>
+              <button onClick={handleReset} className="px-3 py-1.5 text-xs text-white bg-blue-500 hover:bg-blue-600 rounded transition shadow-sm">☒ 取消选择</button>
+              <button className="px-3 py-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded transition shadow-sm flex items-center gap-1">⎘ 复制</button>
+            </div>
+          </header>
+
+          {/* 主体分栏 */}
+          <main className="flex-1 flex gap-4 p-4 overflow-hidden">
+            
+            {/* =============== 左侧：配置面板 =============== */}
+            <section className="w-[55%] flex flex-col bg-white border border-gray-200 rounded-lg shadow-sm">
+              <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                <span className="font-bold text-gray-700">配置面板</span>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {modules.map(module => {
+                  const theme = themeMap[module.theme];
+                  return (
+                    <div id={module.id} key={module.id} className={`border rounded-lg p-4 ${theme.bg} ${theme.border}`}>
+                      {/* 模块标题 */}
+                      <div className="flex items-center gap-2 mb-4 pb-2 border-b border-white/40">
+                        <span className={`w-5 h-5 rounded flex items-center justify-center text-xs font-bold text-white ${theme.badge}`}>{module.number}</span>
+                        <h3 className="font-bold text-gray-800">{module.title}</h3>
+                      </div>
+                      
+                      {/* 分类及标签 */}
+                      <div className="space-y-4">
+                        {module.categories.map(category => (
+                          <div key={category.id} className="flex flex-col">
+                            <div className="text-xs font-bold text-gray-600 mb-2">{category.name}</div>
+                            <div className="flex flex-wrap gap-2">
+                              {category.tags.map(tag => (
+                                <button
+                                  key={tag.id}
+                                  onClick={() => toggleTag(module.id, category.id, tag.id)}
+                                  className={`px-3 py-1 rounded-full text-xs transition-all duration-200 border ${
+                                    tag.selected 
+                                      ? theme.activeTag + ' font-medium' 
+                                      : 'border-white bg-white/80 text-gray-600 hover:border-gray-300'
+                                  }`}
+                                >
+                                  {tag.text}
+                                </button>
+                              ))}
+                              <button className="w-6 h-6 rounded-full flex items-center justify-center border border-dashed border-gray-400 text-gray-500 hover:bg-white transition">+</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* =============== 右侧：JSON 预览面板 =============== */}
+            <section className="w-[45%] flex flex-col bg-[#FDFDFD] border border-gray-200 rounded-lg shadow-sm">
+              <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                <span className="font-bold text-gray-700 flex items-center gap-2">
+                  <span className="text-gray-400 font-mono">{'</>'}</span> 提示词预览
+                </span>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-5 font-mono text-[13px] leading-loose">
+                <div className="text-gray-700">
+                  {'{'}
+                  {modules.map((module, mIndex) => {
+                    const activeCategories = module.categories.filter(cat => cat.tags.some(tag => tag.selected));
+                    if (activeCategories.length === 0) return null;
+                    const theme = themeMap[module.theme];
+                    
+                    return (
+                      <div key={module.id} className="pl-6 mt-1">
+                        <span className={theme.text}>"{module.title}"</span>: {'{'}
+                        
+                        {activeCategories.map((category, cIndex) => {
+                          const selectedTags = category.tags.filter(t => t.selected);
+                          return (
+                            <div key={category.id} className="pl-6 flex flex-wrap items-center">
+                              <span className="text-blue-600 mr-2">"{category.name}"</span>: <span className="text-gray-400 mx-1">[</span>
+                              
+                              <div className="flex flex-wrap gap-1.5 items-center my-1">
+                                {selectedTags.map((tag, tIndex) => (
+                                  <Fragment key={tag.id}>
+                                    <span className={`px-2 py-0.5 rounded-full text-xs border ${theme.activeTag} leading-none whitespace-nowrap`}>
+                                      {tag.text}
+                                    </span>
+                                    {tIndex < selectedTags.length - 1 && <span className="text-gray-400">,</span>}
+                                  </Fragment>
+                                ))}
+                              </div>
+                              
+                              <span className="text-gray-400 ml-1">]</span>
+                              {cIndex < activeCategories.length - 1 && <span className="text-gray-400">,</span>}
+                            </div>
+                          );
+                        })}
+                        
+                        <div className="pl-6">{'}'}{mIndex < modules.length - 1 && <span className="text-gray-400">,</span>}</div>
+                      </div>
+                    );
+                  })}
+                  <div className="mt-1">{'}'}</div>
+                </div>
+              </div>
+            </section>
+
+          </main>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
