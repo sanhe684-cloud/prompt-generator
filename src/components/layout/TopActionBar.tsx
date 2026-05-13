@@ -111,7 +111,7 @@ export const TopActionBar = () => {
           <button
             type="button"
             onClick={clearSelections}
-            className="flex items-center gap-1 rounded bg-blue-500 px-3 py-1.5 text-xs text-white shadow-sm transition hover:bg-blue-600"
+            className="px-3 py-1.5 text-xs text-white bg-indigo-500 hover:bg-indigo-600 rounded transition shadow-sm flex items-center gap-1"
           >
             <Eraser size={13} />
             取消选择
@@ -122,7 +122,7 @@ export const TopActionBar = () => {
               await copyPreviewAsJson(previewText)
               showToast('复制成功，已写入剪贴板。')
             }}
-            className="flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-xs text-white shadow-sm transition hover:bg-blue-700"
+            className="px-3 py-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded transition shadow-sm flex items-center gap-1"
           >
             <Copy size={13} />
             复制
